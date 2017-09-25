@@ -6,7 +6,6 @@ import time
 import socket
 import requests
 
-
 LOGGER = logging.getLogger(__name__)
 APP_ID = os.getenv('MARATHON_APP_ID')
 MESOS_TASK_ID = os.getenv('MESOS_TASK_ID')
