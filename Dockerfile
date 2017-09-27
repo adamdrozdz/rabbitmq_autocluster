@@ -10,7 +10,9 @@ ENV RABBITMQ_ERLANG_COOKIE=default \
   RABBITMQ_CLUSTER_PARTITION_HANDLING=ignore \
   ERL_EPMD_PORT=4369 \
   RABBITMQ_MANAGEMENT_PORT=15672 \
-  MARATHON_URI=http://leader.mesos:8080
+  MARATHON_URI=http://leader.mesos:8080 \
+  AUTOCLUSTER_VERSION=0.6.1 \
+  RABBITMQ_SERVER_ERL_ARGS="+K true +A128 +P 1048576 -kernel inet_default_connect_options [{nodelay,true}]" 
 
 ENV PACKAGES="\
   musl \
@@ -20,13 +22,14 @@ ENV PACKAGES="\
   python2 \
   python2-dev \
   py-setuptools \
+  tar \
 "
 RUN echo \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" > /etc/apk/repositories \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
 
-  && apk add --no-cache $PACKAGES || \
+  && apk add --no-cache $PACKAGES bash coreutils curl  xz || \
     (sed -i -e 's/dl-cdn/dl-4/g' /etc/apk/repositories && apk add --no-cache $PACKAGES) \
 
   && echo "http://dl-cdn.alpinelinux.org/alpine/v$ALPINE_VERSION/main/" > /etc/apk/repositories \
@@ -39,13 +42,30 @@ RUN echo \
   && easy_install requests \
   && if [[ ! -e /usr/bin/pip ]]; then ln -sf /usr/bin/pip2.7 /usr/bin/pip; fi \
   && echo
-
-
-RUN chown -R rabbitmq:rabbitmq /var/lib/rabbitmq
+  RUN \
+  curl -sL -o /tmp/autocluster-${AUTOCLUSTER_VERSION}.tgz https://github.com/aweber/rabbitmq-autocluster/releases/download/${AUTOCLUSTER_VERSION}/autocluster-${AUTOCLUSTER_VERSION}.tgz && \
+  tar -xvz -C /opt/rabbitmq/ -f /tmp/autocluster-${AUTOCLUSTER_VERSION}.tgz && \
+  rm /tmp/autocluster-${AUTOCLUSTER_VERSION}.tgz
+RUN chown -R rabbitmq /opt/rabbitmq/plugins
+RUN chmod -R 777 /opt/rabbitmq/plugins
+RUN chown -R rabbitmq /var/lib/rabbitmq
 ADD ./rabbitmq-cluster.py /rabbitmq-cluster.py
 RUN chmod +x /rabbitmq-cluster.py
 #enable management plugin for gui 
-RUN rabbitmq-plugins enable --offline rabbitmq_management
+RUN rabbitmq-plugins enable --offline \
+        autocluster \
+        rabbitmq_consistent_hash_exchange \
+        rabbitmq_federation \
+        rabbitmq_federation_management \
+        rabbitmq_mqtt \
+        rabbitmq_recent_history_exchange \
+        rabbitmq_sharding \
+        rabbitmq_shovel \
+        rabbitmq_shovel_management \
+        rabbitmq_stomp \
+        rabbitmq_top \
+        rabbitmq_web_stomp && \
+  rabbitmq-plugins list
 
 EXPOSE 15671 15672 4369 5671 5672 25672
 
