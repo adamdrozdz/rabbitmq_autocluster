@@ -1,4 +1,5 @@
 FROM rabbitmq:alpine
+MAINTAINER Adam Drozdz <adrozdz@container-labs.com>
 
 ENV RABBITMQ_ERLANG_COOKIE=default \
   RABBITMQ_DEFAULT_USER=guest \
