@@ -23,13 +23,17 @@ ENV PACKAGES="\
   python2-dev \
   py-setuptools \
   tar \
+  bash \
+  coreutils \
+  curl \
+  xz \
 "
 RUN echo \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/testing" > /etc/apk/repositories \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories \
   && echo "http://dl-cdn.alpinelinux.org/alpine/edge/main" >> /etc/apk/repositories \
 
-  && apk add --no-cache $PACKAGES bash coreutils curl  xz || \
+  && apk add --no-cache $PACKAGES || \
     (sed -i -e 's/dl-cdn/dl-4/g' /etc/apk/repositories && apk add --no-cache $PACKAGES) \
 
   && echo "http://dl-cdn.alpinelinux.org/alpine/v$ALPINE_VERSION/main/" > /etc/apk/repositories \
@@ -46,6 +50,7 @@ RUN echo \
   curl -sL -o /tmp/autocluster-${AUTOCLUSTER_VERSION}.tgz https://github.com/aweber/rabbitmq-autocluster/releases/download/${AUTOCLUSTER_VERSION}/autocluster-${AUTOCLUSTER_VERSION}.tgz && \
   tar -xvz -C /opt/rabbitmq/ -f /tmp/autocluster-${AUTOCLUSTER_VERSION}.tgz && \
   rm /tmp/autocluster-${AUTOCLUSTER_VERSION}.tgz
+  
 RUN chown -R rabbitmq /opt/rabbitmq/plugins
 RUN chmod -R 777 /opt/rabbitmq/plugins
 RUN chown -R rabbitmq /var/lib/rabbitmq
